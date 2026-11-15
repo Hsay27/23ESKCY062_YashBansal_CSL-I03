@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="refresh" content="5">
+<title>Secure Sensor Server</title>
+<style>
+  :root {
+    --bg: #eef1f4; --panel: #ffffff; --ink: #14243a; --muted: #5d6b7d;
+    --line: #d5dce4; --ok: #1d7352; --bad: #b0291f; --plain: #a86500;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0f1722; --panel: #172232; --ink: #e4eaf2; --muted: #93a1b3;
+            --line: #2a3a4f; --ok: #4cc392; --bad: #f2786d; --plain: #f0b04a; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 15px/1.5 system-ui, "Segoe UI", Roboto, sans-serif; }
+  header { padding: 22px 28px 14px; border-bottom: 1px solid var(--line); }
+  h1 { margin: 0; font-size: 22px; }
+  header p { margin: 2px 0 0; color: var(--muted); }
+  main { padding: 20px 28px 40px; display: grid; gap: 20px; max-width: 1180px; }
+  .stats { display: flex; gap: 32px; flex-wrap: wrap; }
+  .stat b { display: block; font-size: 30px; font-variant-numeric: tabular-nums; }
+  .stat span { color: var(--muted); }
+  .stat.ok b { color: var(--ok); }  .stat.bad b { color: var(--bad); }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; }
+  section h2 { font-size: 16px; margin: 0; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 7px 16px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { color: var(--muted); font-weight: 600; font-size: 13px; }
+  tr:last-child td { border-bottom: 0; }
+  .tag { font-weight: 600; }
+  .tag.secure { color: var(--ok); } .tag.plain { color: var(--plain); } .tag.bad { color: var(--bad); }
+  .empty { padding: 14px 16px; color: var(--muted); }
+  .reasons { color: var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Secure Sensor Data Server</h1>
+  <p>ESP32 &rarr; Server &nbsp;|&nbsp; AES-128-CBC + HMAC-SHA256 &nbsp;|&nbsp;
+     registered devices: {{ devices|join(", ") }} &nbsp;|&nbsp; refreshes every 5 s</p>
+</header>
+<main>
+  <div class="stats">
+    <div class="stat ok"><b>{{ stats.accepted }}</b><span>verified readings stored</span></div>
+    <div class="stat bad"><b>{{ stats.rejected }}</b><span>requests rejected</span></div>
+    <div class="stat"><b>{{ stats.devices }}</b><span>devices reporting</span></div>
+    {% if stats.by_reason %}
+    <div class="stat reasons"><span>rejections by reason:<br>
+      {% for r, n in stats.by_reason.items() %}{{ r }} = {{ n }}{% if not loop.last %}, {% endif %}{% endfor %}
+    </span></div>
+    {% endif %}
+  </div>
+
+  <section>
+    <h2>Latest readings</h2>
+    {% if readings %}
+    <div class="scroll"><table>
+      <tr><th>Received</th><th>Device</th><th>Seq</th><th>Temp (&deg;C)</th><th>Humidity (%)</th><th>Channel</th></tr>
+      {% for r in readings %}
+      <tr><td>{{ r.received_at }}</td><td>{{ r.device_id }}</td><td>{{ r.seq if r.mode == 'secure' else '-' }}</td>
+          <td>{{ "%.2f"|format(r.temp_c) }}</td><td>{{ "%.2f"|format(r.humidity) }}</td>
+          <td class="tag {{ r.mode }}">{{ 'verified' if r.mode == 'secure' else 'plaintext (unverified)' }}</td></tr>
+      {% endfor %}
+    </table></div>
+    {% else %}<p class="empty">No readings yet. Start the ESP32 or the simulator.</p>{% endif %}
+  </section>
+
+  <section>
+    <h2>Security events (rejected requests)</h2>
+    {% if events %}
+    <div class="scroll"><table>
+      <tr><th>Time</th><th>Device</th><th>Source IP</th><th>Reason</th><th>Detail</th></tr>
+      {% for e in events %}
+      <tr><td>{{ e.time }}</td><td>{{ e.device_id or '-' }}</td><td>{{ e.remote_ip }}</td>
+          <td class="tag bad">{{ e.reason }}</td><td>{{ e.detail or '' }}</td></tr>
+      {% endfor %}
+    </table></div>
+    {% else %}<p class="empty">No rejected requests.</p>{% endif %}
+  </section>
+</main>
+</body>
+</html>

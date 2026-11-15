@@ -1,0 +1,10 @@
+{
+  "ESP32-01": {
+    "aes_key": "a309dbd72cc97cbbc558b48fbfbf7c6f",
+    "hmac_key": "c891cbaf83d87c8c47e1cdf81e85f2bf0008f06179e0a0a8fca8a61fe23d61e6"
+  },
+  "ESP32-TEST": {
+    "aes_key": "d580094f4ea8379447f93954f7bea3ce",
+    "hmac_key": "0aa5cd5253d8c266dcf2cf7e61d610d9845e4f60cc5af76834718ee0f348ac59"
+  }
+}
